@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+parlay_picker.db
+*.db
+__pycache__/
+.env
