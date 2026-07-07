@@ -220,3 +220,5 @@ parlay_picker.db
 *.db
 __pycache__/
 .env
+parlay_picker.db
+*.db

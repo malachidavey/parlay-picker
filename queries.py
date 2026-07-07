@@ -114,6 +114,25 @@ def get_parlay_by_parlay_id(parlay_id):
     conn.close()
     return parlay
 
+def insert_matchup(event_id, sport, league, home_team, away_team, commence_time):
+    """Inserts an upcoming match or updates it if it already exists."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO matchups (event_id, sport, league, home_team, away_team, commence_time)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(event_id) DO UPDATE SET
+                commence_time = excluded.commence_time,
+                last_odds_update = CURRENT_TIMESTAMP
+        """, (event_id, sport, league, home_team, away_team, commence_time))
+        conn.commit()
+        print(f"Successfully inserted/updated match: {home_team} vs {away_team}")
+    except Exception as e:
+        print(f"Database error inserting matchup: {e}")
+    finally:
+        conn.close()
+
 # update parlay odds
 def update_parlay_odds(parlay_id, combined_odds, implied_probability, true_probability, ev_value, ai_explanation, status):
     conn = get_connection()
