@@ -134,14 +134,14 @@ def update_parlay_odds(parlay_id, combined_odds, implied_probability, true_proba
     conn.close()
 
 # insert new leg into database
-def add_leg(parlay_id, event_id, bet_type, selection, odds_at_pick):
+def add_leg(parlay_id, event_id, bet_type, selection, odds_at_pick, opponent_odds):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO legs(parlay_id, event_id, bet_type, selection, odds_at_pick)
-        VALUES (? , ? , ? , ? , ?)
-        """, (parlay_id, event_id, bet_type, selection, odds_at_pick))
+        INSERT INTO legs(parlay_id, event_id, bet_type, selection, odds_at_pick, opponent_odds)
+        VALUES (? , ? , ? , ? , ? , ?)
+        """, (parlay_id, event_id, bet_type, selection, odds_at_pick, opponent_odds))
     
     conn.commit()
     conn.close()
@@ -187,8 +187,8 @@ if __name__ == "__main__":
 
     # add a matchup and a leg tied to it 
     add_matchup("test_event_001", "basketball", "NBA", "Knicks", "Spurs", "2026-07-10T23:40:00Z")
-    add_leg(parlay_id, "test_event_001", "h2h", "Knicks", -110)
-
+    add_leg(parlay_id, "test_event_001", "h2h", "Knicks", -110, 200)
+    add_leg(parlay_id, "test_event_001", "h2h", "Celtics", 150, -180)
     
     legs = get_legs_by_parlay(parlay_id)
     print("Legs: ", [dict(leg) for leg in legs])

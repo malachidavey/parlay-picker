@@ -1,3 +1,4 @@
+from queries import get_legs_by_parlay, update_parlay_odds
 
 def calculate_implied_probability(odds):
     if odds < 0:                                # negative odds
@@ -30,6 +31,48 @@ def american_to_decimal(odds):
     else:                               # positive odds = underdog
         return (odds / 100) + 1
 
+def evaluate_parlay(parlay_id):
+    legs = get_legs_by_parlay(parlay_id)  #fetch all legs in the parlay
+
+    #combined odds - based on the odds the user picked
+    picked_odds_list = [leg['odds_at_pick'] for leg in legs]  # get odds at pick for each leg
+    combined_odds = calculate_combined_odds(picked_odds_list)  # calculate combined odds for the parlay
+
+    #combined implied probability - multiply each leg's implied probability together
+    combined_implied_probability = 1
+    for leg in legs:
+        implied = calculate_implied_probability(leg['odds_at_pick'])
+        combined_implied_probability *= implied
+    
+    #combined true probability - multiply each leg's no-vig true probability together
+    combined_true_probability = 1
+    for leg in legs:
+        true_prob = calculate_true_probability(leg['odds_at_pick'], leg['opponent_odds'])
+        combined_true_probability *= true_prob
+    
+    # ev using the combined true probability against combined decimal odds
+    ev = calculate_ev(combined_true_probability, combined_odds)
+
+    #save results back to the parlay row
+    update_parlay_odds(
+        parlay_id,
+        combined_odds,
+        combined_implied_probability,
+        combined_true_probability,
+        ev,
+        ai_explanation=None,        #filled in later once GenAI exists
+        status='pending'
+    )
+
+    return{
+        "combined_odds" : combined_odds,
+        "implied_probability" : combined_implied_probability,
+        "true_probability" : combined_true_probability,
+        "ev_value" : ev
+    }
+
+
+
 if __name__ == "__main__":
     print(calculate_implied_probability(-110))
     print(calculate_implied_probability(150))
@@ -49,3 +92,6 @@ if __name__ == "__main__":
     print(calculate_ev(0.15, 7.16))
     print(calculate_ev(0.60, 1.5))
     print(calculate_ev(0.90, 3.0))
+
+    result = evaluate_parlay(1)
+    print("Evaluation result:", result)

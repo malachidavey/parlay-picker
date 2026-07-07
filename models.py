@@ -63,6 +63,7 @@ def create_tables():
         bet_type TEXT NOT NULL CHECK (bet_type IN ('h2h', 'spreads', 'totals')),
         selection TEXT NOT NULL,
         odds_at_pick REAL NOT NULL,
+        opponent_odds REAL NOT NULL,
         outcome TEXT NOT NULL DEFAULT 'pending' CHECK (outcome IN ('pending', 'won', 'lost')),
         FOREIGN KEY (parlay_id) REFERENCES parlays(parlay_id) ON DELETE CASCADE,
         FOREIGN KEY (event_id) REFERENCES matchups(event_id) ON DELETE CASCADE)
