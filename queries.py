@@ -192,6 +192,26 @@ def update_leg_outcome(leg_id, outcome):
     conn.commit()
     conn.close()
 
+def insert_matchup_stats(event_id, team_id, recent_form, head_to_head_summary=None, injury_notes=None):
+    """Inserts matchup stats from external APIs or updates them if they conflict."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO matchup_stats (event_id, team_id, recent_form, head_to_head_summary, injury_notes)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(event_id, team_id) DO UPDATE SET
+                recent_form = excluded.recent_form,
+                head_to_head_summary = COALESCE(excluded.head_to_head_summary, matchup_stats.head_to_head_summary),
+                injury_notes = COALESCE(excluded.injury_notes, matchup_stats.injury_notes),
+                last_updated = CURRENT_TIMESTAMP
+        """, (event_id, team_id, recent_form, head_to_head_summary, injury_notes))
+        conn.commit()
+    except Exception as e:
+        print(f"Database error inserting matchup stats: {e}")
+    finally:
+        conn.close()
+
 
 if __name__ == "__main__":
 
