@@ -25,18 +25,7 @@ def get_user(username):
     conn.close()
     return user
 
-# insert new matchup into database
-def add_matchup(event_id, sport, league, home_team, away_team, commence_time):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO matchups (event_id, sport, league, home_team, away_team, commence_time)
-        VALUES (? , ? , ? , ? , ? , ?)
-        """, (event_id, sport, league, home_team, away_team, commence_time))
-
-    conn.commit()
-    conn.close()
 # fetch matchup by event_id
 def get_matchup(event_id):
     conn = get_connection()
@@ -205,7 +194,7 @@ if __name__ == "__main__":
     print("Parlay ID: ", parlay_id)
 
     # add a matchup and a leg tied to it 
-    add_matchup("test_event_001", "basketball", "NBA", "Knicks", "Spurs", "2026-07-10T23:40:00Z")
+    insert_matchup("test_event_001", "basketball", "NBA", "Knicks", "Spurs", "2026-07-10T23:40:00Z")
     add_leg(parlay_id, "test_event_001", "h2h", "Knicks", -110, 200)
     add_leg(parlay_id, "test_event_001", "h2h", "Celtics", 150, -180)
     
