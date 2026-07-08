@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parlay Picker — Wireframes</title>
+<style>
+  :root {
+    --ink: #1c2024;
+    --line: #b8bfc7;
+    --line-soft: #dde1e6;
+    --muted: #6b7480;
+    --paper: #ffffff;
+    --panel: #f4f6f8;
+    --accent: #2f6feb;
+    --pos: #1f8a4c;      /* positive EV */
+    --neg: #c23b3b;      /* negative EV */
+    --pend: #b07d18;     /* pending */
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background: #e9ecef;
+    padding: 32px 16px 80px;
+  }
+  h1.page-title { text-align: center; font-size: 22px; letter-spacing: .5px; }
+  p.sub { text-align: center; color: var(--muted); margin-top: -8px; }
+
+  /* --- wireframe primitives --- */
+  .screen {
+    max-width: 960px;
+    margin: 40px auto;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0,0,0,.10);
+  }
+  .screen-label {
+    background: var(--ink);
+    color: #fff;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    padding: 6px 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .screen-label .route { opacity: .7; }
+  .browser-chrome {
+    background: var(--panel);
+    border-bottom: 1px solid var(--line-soft);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .url {
+    margin-left: 10px; flex: 1; background: #fff;
+    border: 1px solid var(--line-soft); border-radius: 20px;
+    padding: 3px 12px; color: var(--muted); font-size: 12px;
+  }
+  .body { padding: 0; }
+
+  /* nav */
+  nav.appnav {
+    display: flex; align-items: center; gap: 20px;
+    padding: 12px 20px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  nav.appnav .brand { font-weight: 700; letter-spacing: .3px; }
+  nav.appnav a { color: var(--muted); text-decoration: none; }
+  nav.appnav a.active { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+  nav.appnav .spacer { flex: 1; }
+  .badge-user {
+    border: 1px solid var(--line); border-radius: 20px;
+    padding: 3px 12px; font-size: 12px; color: var(--muted);
+  }
+
+  .content { padding: 20px; }
+  .content.split { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  section h2 { font-size: 15px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+
+  /* generic card */
+  .card {
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 12px; background: #fff;
+  }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .between { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+  .stack > * + * { margin-top: 6px; }
+
+  /* chips / pills */
+  .chip { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 20px; border: 1px solid var(--line); color: var(--muted); }
+  .chip.pending { color: var(--pend); border-color: var(--pend); }
+  .chip.won { color: var(--pos); border-color: var(--pos); }
+  .chip.lost { color: var(--neg); border-color: var(--neg); }
+  .pill-odds { font-family: ui-monospace, Menlo, monospace; font-weight: 600; border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; }
+  .tag { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 4px; padding: 1px 7px; font-size: 11px; color: var(--muted); }
+
+  .ev { font-family: ui-monospace, Menlo, monospace; font-weight: 700; }
+  .ev.pos { color: var(--pos); }
+  .ev.neg { color: var(--neg); }
+
+  .btn { display: inline-block; border: 1px solid var(--ink); background: #fff; border-radius: 4px; padding: 5px 12px; font-size: 12px; cursor: default; }
+  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.sm { padding: 3px 9px; font-size: 11px; }
+  .btn.add { border-style: dashed; color: var(--accent); border-color: var(--accent); }
+
+  .placeholder-line { height: 8px; background: var(--line-soft); border-radius: 4px; }
+  .w60 { width: 60%; } .w40 { width: 40%; } .w80 { width: 80%; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .kpi .num { font-size: 22px; font-weight: 700; }
+  .kpi .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+
+  /* bet slip */
+  .betslip { border: 1px solid var(--ink); border-radius: var(--radius); background: var(--panel); padding: 14px; height: fit-content; }
+  .betslip h3 { margin: 0 0 12px; font-size: 14px; display: flex; justify-content: space-between; }
+  .leg { background: #fff; border: 1px solid var(--line-soft); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; font-size: 12px; }
+  .leg .x { color: var(--neg); cursor: default; }
+  .slip-total { border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 10px; }
+  .slip-total .row { justify-content: space-between; font-size: 13px; }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field .input { border: 1px solid var(--line); border-radius: 4px; height: 34px; background: #fff; }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .select { border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; font-size: 12px; background: #fff; color: var(--muted); }
+
+  .note { max-width: 960px; margin: 0 auto 8px; color: var(--muted); font-size: 12px; padding-left: 4px; }
+  .legend { max-width: 960px; margin: 24px auto; background: #fff; border: 1px dashed var(--line); border-radius: 8px; padding: 16px 20px; font-size: 13px; }
+  .legend h3 { margin: 0 0 8px; font-size: 13px; }
+  .legend span.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+  .aiblock { background: var(--panel); border-left: 3px solid var(--accent); border-radius: 4px; padding: 12px 14px; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">PARLAY PICKER — Frontend Wireframes</h1>
+<p class="sub">Low-fidelity mockups · maps to routes &amp; components in FRONTEND_PLAN.md</p>
+
+<!-- ============ 1. DASHBOARD ============ -->
+<div class="note">1 / 7</div>
+<div class="screen">
+  <div class="screen-label"><span>Dashboard — your parlays + EV summary</span><span class="route">/</span></div>
+  <div class="browser-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">parlaypicker.app/</span></div>
+  <div class="body">
+    <nav class="appnav">
+      <span class="brand">◆ Parlay Picker</span>
+      <a class="active" href="#">Dashboard</a>
+      <a href="#">Matchups</a>
+      <a href="#">Build</a>
+      <span class="spacer"></span>
+      <span class="badge-user">◐ jordan_b</span>
+    </nav>
+    <div class="content">
+      <div class="kpi-row">
+        <div class="kpi"><div class="num">12</div><div class="lbl">Pending</div></div>
+        <div class="kpi"><div class="num" style="color:var(--pos)">7</div><div class="lbl">Won</div></div>
+        <div class="kpi"><div class="num" style="color:var(--neg)">4</div><div class="lbl">Lost</div></div>
+        <div class="kpi"><div class="num ev pos">+0.18</div><div class="lbl">Avg EV</div></div>
+      </div>
+      <section>
+        <h2>Your parlays</h2>
+        <!-- ParlayRow -->
+        <div class="card row between">
+          <div class="stack">
+            <div class="row"><strong>3-leg parlay</strong><span class="chip pending">pending</span></div>
+            <div class="small muted">Lakers ML · Chiefs -3.5 · Over 47.5 &nbsp;·&nbsp; created Jul 6</div>
+          </div>
+          <div class="row" style="gap:18px">
+            <span class="pill-odds">+540</span>
+            <span class="ev pos">EV +0.22</span>
+            <span class="btn sm">View →</span>
+          </div>
+        </div>
+        <div class="card row between">
+          <div class="stack">
+            <div class="row"><strong>2-leg parlay</strong><span class="chip won">won</span></div>
+            <div class="small muted">Celtics ML · Under 210.5 &nbsp;·&nbsp; created Jul 4</div>
+          </div>
+          <div class="row" style="gap:18px">
+            <span class="pill-odds">+265</span>
+            <span class="ev pos">EV +0.09</span>
+            <span class="btn sm">View →</span>
+          </div>
+        </div>
+        <div class="card row between">
+          <div class="stack">
+            <div class="row"><strong>4-leg parlay</strong><span class="chip lost">lost</span></div>
+            <div class="small muted">Yankees ML · Dodgers -1.5 · Over 8.5 · Padres ML &nbsp;·&nbsp; Jul 2</div>
+          </div>
+          <div class="row" style="gap:18px">
+            <span class="pill-odds">+1120</span>
+            <span class="ev neg">EV −0.06</span>
+            <span class="btn sm">View →</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. MATCHUPS LIST ============ -->
+<div class="note">2 / 7</div>
+<div class="screen">
+  <div class="screen-label"><span>Browse matchups — filter by sport / league</span><span class="route">/matchups</span></div>
+  <div class="browser-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">parlaypicker.app/matchups</span></div>
+  <div class="body">
+    <nav class="appnav">
+      <span class="brand">◆ Parlay Picker</span>
+      <a href="#">Dashboard</a>
+      <a class="active" href="#">Matchups</a>
+      <a href="#">Build</a>
+      <span class="spacer"></span>
+      <span class="badge-user">◐ jordan_b</span>
+    </nav>
+    <div class="content split">
+      <section>
+        <h2>Upcoming matchups</h2>
+        <div class="toolbar">
+          <span class="select">Sport: All ▾</span>
+          <span class="select">League: All ▾</span>
+          <span class="select">Sort: Soonest ▾</span>
+        </div>
+        <!-- MatchupCard -->
+        <div class="card">
+          <div class="row between">
+            <div><strong>Lakers</strong> <span class="muted">vs</span> <strong>Warriors</strong></div>
+            <div class="row"><span class="tag">NBA</span><span class="tag">basketball</span></div>
+          </div>
+          <div class="small muted" style="margin:6px 0 10px">Tonight · 7:30 PM ET</div>
+          <div class="row" style="gap:8px; flex-wrap:wrap">
+            <span class="btn add sm">+ ML  <span class="pill-odds">−140</span></span>
+            <span class="btn add sm">+ Spread −3.5  <span class="pill-odds">−110</span></span>
+            <span class="btn add sm">+ Total O 231.5  <span class="pill-odds">−108</span></span>
+            <span class="btn sm">Stats →</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row between">
+            <div><strong>Chiefs</strong> <span class="muted">vs</span> <strong>Bills</strong></div>
+            <div class="row"><span class="tag">NFL</span><span class="tag">football</span></div>
+          </div>
+          <div class="small muted" style="margin:6px 0 10px">Sun · 4:25 PM ET</div>
+          <div class="row" style="gap:8px; flex-wrap:wrap">
+            <span class="btn add sm">+ ML  <span class="pill-odds">+120</span></span>
+            <span class="btn add sm">+ Spread +2.5  <span class="pill-odds">−105</span></span>
+            <span class="btn add sm">+ Total O 47.5  <span class="pill-odds">−110</span></span>
+            <span class="btn sm">Stats →</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="placeholder-line w60" style="margin-bottom:10px"></div>
+          <div class="placeholder-line w80" style="margin-bottom:14px"></div>
+          <div class="placeholder-line w40"></div>
+        </div>
+      </section>
+      <!-- BetSlip (sidebar on wide screens) -->
+      <aside class="betslip">
+        <h3>Bet Slip <span class="muted small">2 legs</span></h3>
+        <div class="leg row between"><span>Lakers ML <span class="pill-odds">−140</span></span><span class="x">✕</span></div>
+        <div class="leg row between"><span>Chiefs +2.5 <span class="pill-odds">−105</span></span><span class="x">✕</span></div>
+        <div class="slip-total stack">
+          <div class="row"><span class="muted">Combined odds</span><span class="pill-odds">+178</span></div>
+          <div class="row"><span class="muted">Implied prob</span><span>35.9%</span></div>
+          <div class="row"><span class="muted">True prob</span><span>41.2%</span></div>
+          <div class="row"><span class="muted">Expected value</span><span class="ev pos">+0.15</span></div>
+        </div>
+        <div class="btn primary" style="width:100%;text-align:center;margin-top:12px">Save parlay →</div>
+        <div class="small muted" style="text-align:center;margin-top:6px">live via /api/ev/preview</div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3. MATCHUP DETAIL ============ -->
+<div class="note">3 / 7</div>
+<div class="screen">
+  <div class="screen-label"><span>Matchup detail + stats — add legs</span><span class="route">/matchups/[eventId]</span></div>
+  <div class="browser-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">parlaypicker.app/matchups/nba_lal_gsw_0706</span></div>
+  <div class="body">
+    <nav class="appnav">
+      <span class="brand">◆ Parlay Picker</span>
+      <a href="#">Dashboard</a>
+      <a class="active" href="#">Matchups</a>
+      <a href="#">Build</a>
+      <span class="spacer"></span>
+      <span class="badge-user">◐ jordan_b</span>
+    </nav>
+    <div class="content">
+      <div class="small muted" style="margin-bottom:8px">← Back to matchups</div>
+      <div class="card">
+        <div class="row between">
+          <h2 style="margin:0"><strong style="color:var(--ink);font-size:18px">Lakers vs Warriors</strong></h2>
+          <div class="row"><span class="tag">NBA</span><span class="small muted">Tonight 7:30 PM ET</span></div>
+        </div>
+      </div>
+      <section style="margin-top:6px">
+        <h2>Markets — add to slip</h2>
+        <div class="row" style="gap:8px; flex-wrap:wrap">
+          <span class="btn add">+ Lakers ML <span class="pill-odds">−140</span></span>
+          <span class="btn add">+ Warriors ML <span class="pill-odds">+120</span></span>
+          <span class="btn add">+ LAL −3.5 <span class="pill-odds">−110</span></span>
+          <span class="btn add">+ GSW +3.5 <span class="pill-odds">−108</span></span>
+          <span class="btn add">+ Over 231.5 <span class="pill-odds">−108</span></span>
+          <span class="btn add">+ Under 231.5 <span class="pill-odds">−112</span></span>
+        </div>
+      </section>
+      <section style="margin-top:22px">
+        <h2>Team stats (matchup_stats)</h2>
+        <div class="content split" style="padding:0; grid-template-columns:1fr 1fr">
+          <div class="card stack">
+            <strong>Lakers</strong>
+            <div class="small"><span class="muted">Recent form:</span> W W L W W</div>
+            <div class="small"><span class="muted">H2H:</span> 2–1 vs GSW this season</div>
+            <div class="small"><span class="muted">Injuries:</span> None reported</div>
+          </div>
+          <div class="card stack">
+            <strong>Warriors</strong>
+            <div class="small"><span class="muted">Recent form:</span> L W W L L</div>
+            <div class="small"><span class="muted">H2H:</span> 1–2 vs LAL this season</div>
+            <div class="small"><span class="muted">Injuries:</span> Curry — questionable (ankle)</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4. PARLAY BUILD ============ -->
+<div class="note">4 / 7</div>
+<div class="screen">
+  <div class="screen-label"><span>Bet slip builder — live combined odds / EV</span><span class="route">/parlay/build</span></div>
+  <div class="browser-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">parlaypicker.app/parlay/build</span></div>
+  <div class="body">
+    <nav class="appnav">
+      <span class="brand">◆ Parlay Picker</span>
+      <a href="#">Dashboard</a>
+      <a href="#">Matchups</a>
+      <a class="active" href="#">Build</a>
+      <span class="spacer"></span>
+      <span class="badge-user">◐ jordan_b</span>
+    </nav>
+    <div class="content split">
+      <section>
+        <h2>Current legs (3)</h2>
+        <div class="card row between">
+          <div class="stack"><strong>Lakers ML</strong><span class="small muted">NBA · Lakers vs Warriors</span></div>
+          <div class="row" style="gap:14px"><span class="pill-odds">−140</span><span class="x" style="color:var(--neg)">✕</span></div>
+        </div>
+        <div class="card row between">
+          <div class="stack"><strong>Chiefs −3.5</strong><span class="small muted">NFL · Chiefs vs Bills</span></div>
+          <div class="row" style="gap:14px"><span class="pill-odds">−110</span><span class="x" style="color:var(--neg)">✕</span></div>
+        </div>
+        <div class="card row between">
+          <div class="stack"><strong>Over 47.5</strong><span class="small muted">NFL · Chiefs vs Bills</span></div>
+          <div class="row" style="gap:14px"><span class="pill-odds">−108</span><span class="x" style="color:var(--neg)">✕</span></div>
+        </div>
+        <div class="small muted">Add more legs from the Matchups page →</div>
+      </section>
+      <aside class="betslip">
+        <h3>Slip summary</h3>
+        <div class="slip-total stack" style="border-top:none;margin-top:0;padding-top:0">
+          <div class="row"><span class="muted">Combined odds</span><span class="pill-odds">+540</span></div>
+          <div class="row"><span class="muted">Decimal</span><span>6.40</span></div>
+          <div class="row"><span class="muted">Implied prob</span><span>15.6%</span></div>
+          <div class="row"><span class="muted">True prob</span><span>18.9%</span></div>
+          <div class="row"><span class="muted">Expected value</span><span class="ev pos">+0.21</span></div>
+        </div>
+        <div class="aiblock small" style="margin-top:12px">
+          <strong>EV badge:</strong> positive value — the model rates your true win
+          probability above the book's implied line.
+        </div>
+        <div class="btn primary" style="width:100%;text-align:center;margin-top:12px">Save parlay →</div>
+        <div class="btn" style="width:100%;text-align:center;margin-top:6px">Clear slip</div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5. PARLAY DETAIL ============ -->
+<div class="note">5 / 7</div>
+<div class="screen">
+  <div class="screen-label"><span>Saved parlay — EV breakdown, AI explanation, settle</span><span class="route">/parlay/[parlayId]</span></div>
+  <div class="browser-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">parlaypicker.app/parlay/42</span></div>
+  <div class="body">
+    <nav class="appnav">
+      <span class="brand">◆ Parlay Picker</span>
+      <a class="active" href="#">Dashboard</a>
+      <a href="#">Matchups</a>
+      <a href="#">Build</a>
+      <span class="spacer"></span>
+      <span class="badge-user">◐ jordan_b</span>
+    </nav>
+    <div class="content split">
+      <section>
+        <div class="row between" style="margin-bottom:12px">
+          <h2 style="margin:0">Parlay #42 <span class="chip pending">pending</span></h2>
+          <span class="small muted">created Jul 6</span>
+        </div>
+        <!-- LegList with settle controls -->
+        <div class="card row between">
+          <div class="stack"><strong>Lakers ML</strong><span class="small muted">Lakers vs Warriors · −140</span></div>
+          <div class="row" style="gap:6px">
+            <span class="chip won">won</span><span class="chip">lost</span><span class="chip pending">✓ pending</span>
+          </div>
+        </div>
+        <div class="card row between">
+          <div class="stack"><strong>Chiefs −3.5</strong><span class="small muted">Chiefs vs Bills · −110</span></div>
+          <div class="row" style="gap:6px">
+            <span class="chip">won</span><span class="chip">lost</span><span class="chip pending">✓ pending</span>
+          </div>
+        </div>
+        <div class="card row between">
+          <div class="stack"><strong>Over 47.5</strong><span class="small muted">Chiefs vs Bills · −108</span></div>
+          <div class="row" style="gap:6px">
+            <span class="chip">won</span><span class="chip">lost</span><span class="chip pending">✓ pending</span>
+          </div>
+        </div>
+        <div class="small muted">Parlay status derives from leg outcomes (PATCH /api/legs/:id)</div>
+      </section>
+      <aside class="stack">
+        <div class="betslip">
+          <h3>EV breakdown</h3>
+          <div class="slip-total stack" style="border-top:none;margin-top:0;padding-top:0">
+            <div class="row"><span class="muted">Combined odds</span><span class="pill-odds">+540</span></div>
+            <div class="row"><span class="muted">Implied prob</span><span>15.6%</span></div>
+            <div class="row"><span class="muted">True prob</span><span>18.9%</span></div>
+            <div class="row"><span class="muted">Expected value</span><span class="ev pos">+0.21</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 style="margin-top:0">AI explanation</h2>
+          <div class="aiblock small stack">
+            <div class="placeholder-line w80"></div>
+            <div class="placeholder-line"></div>
+            <div class="placeholder-line w60"></div>
+            <div style="margin-top:6px">Renders stored <code>ai_explanation</code> — why these legs carry positive EV.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 6. AUTH ============ -->
+<div class="note">6 / 7 &amp; 7 / 7</div>
+<div class="screen" style="max-width:520px">
+  <div class="screen-label"><span>Auth</span><span class="route">/login · /register</span></div>
+  <div class="browser-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">parlaypicker.app/login</span></div>
+  <div class="body">
+    <div class="content">
+      <div style="text-align:center;margin:10px 0 20px">
+        <div class="brand" style="font-size:20px;font-weight:700">◆ Parlay Picker</div>
+        <div class="muted small">Sign in to track your parlays</div>
+      </div>
+      <div class="field"><label>Username or email</label><div class="input"></div></div>
+      <div class="field"><label>Password</label><div class="input"></div></div>
+      <div class="btn primary" style="width:100%;text-align:center">Log in</div>
+      <div class="small muted" style="text-align:center;margin-top:14px">
+        No account? <span style="color:var(--accent)">Register →</span> &nbsp;(same layout + email field)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LEGEND ============ -->
+<div class="legend">
+  <h3>Legend / conventions</h3>
+  <div class="stack">
+    <div><span class="swatch" style="background:var(--pos)"></span> Positive EV / won &nbsp;&nbsp;
+         <span class="swatch" style="background:var(--neg)"></span> Negative EV / lost &nbsp;&nbsp;
+         <span class="swatch" style="background:var(--pend)"></span> Pending</div>
+    <div class="small muted">EV color is never the only signal — the numeric value and sign are always shown too (a11y, per plan §8).</div>
+    <div class="small muted"><strong>Bet slip</strong> = persistent client state (context + reducer, localStorage). Sidebar on wide screens → bottom sheet on mobile.</div>
+    <div class="small muted">Odds pills render American format; EV numbers come from <code>lib/ev.ts</code> via <code>/api/ev/preview</code>.</div>
+  </div>
+</div>
+
+</body>
+</html>
