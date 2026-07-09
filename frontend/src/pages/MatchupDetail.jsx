@@ -10,12 +10,26 @@ export function MatchupDetail() {
   const { eventId } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     api.getMatchup(eventId).then(setData).catch((e) => setError(e.message))
   }, [eventId])
 
-  if (error) return <div className="page"><p style={{ color: 'var(--neg)' }}>{error}</p></div>
+  async function refreshStats() {
+    setRefreshing(true)
+    setError(null)
+    try {
+      const r = await api.refreshStats(eventId)
+      setData((d) => ({ ...d, stats: r.stats }))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  if (error && !data) return <div className="page"><p style={{ color: 'var(--neg)' }}>{error}</p></div>
   if (!data) return <div className="page"><p className="muted">Loading…</p></div>
 
   const { matchup, stats } = data
@@ -40,8 +54,14 @@ export function MatchupDetail() {
         <h2 className="section-title">Markets — add to slip</h2>
         <MatchupCard matchup={matchup} />
 
-        <h2 className="section-title" style={{ marginTop: 22 }}>Team stats</h2>
-        {stats.length === 0 && <p className="muted small">No stats recorded for this matchup yet.</p>}
+        <div className="row between" style={{ marginTop: 22 }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Team stats</h2>
+          <button className="btn sm" disabled={refreshing} onClick={refreshStats}>
+            {refreshing ? 'Fetching live…' : 'Refresh live stats'}
+          </button>
+        </div>
+        {error && <p className="small" style={{ color: 'var(--neg)' }}>{error}</p>}
+        {stats.length === 0 && <p className="muted small">No stats recorded for this matchup yet. Click "Refresh live stats" to pull them.</p>}
         <div className="split" style={{ gridTemplateColumns: '1fr 1fr' }}>
           {stats.map((s) => (
             <div key={s.stats_id} className="card stack">

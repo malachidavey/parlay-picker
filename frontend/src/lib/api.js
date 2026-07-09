@@ -29,6 +29,17 @@ export const api = {
     return req(`/api/matchups/${eventId}`)
   },
 
+  // pull live upcoming games + real odds from TheOdds API
+  syncMatchups(sport) {
+    const qs = sport ? `?sport=${encodeURIComponent(sport)}` : ''
+    return req(`/api/matchups/sync${qs}`, { method: 'POST' })
+  },
+
+  // refresh live AI team stats (form, H2H, injuries) for a matchup
+  refreshStats(eventId) {
+    return req(`/api/matchups/${eventId}/refresh-stats`, { method: 'POST' })
+  },
+
   // --- parlays ---
   listParlays(userId) {
     return req(`/api/parlays?userId=${userId}`)
@@ -44,6 +55,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ userId }),
     })
+  },
+
+  // generate + persist an AI explanation for a saved parlay
+  explainParlay(id) {
+    return req(`/api/parlays/${id}/explain`, { method: 'POST' })
   },
 
   // leg = { eventId, betType, selection, oddsAtPick, opponentOdds }

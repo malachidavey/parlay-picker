@@ -3,21 +3,28 @@ import { useBetSlip } from '../state/BetSlip'
 import { OddsPill } from './primitives'
 import { formatDateTime } from '../lib/format'
 
-// NOTE: the matchups table doesn't store odds yet (they come live from
-// the-odds-api). Until that sync populates real prices, we show placeholder
-// h2h odds so the add-leg → bet-slip → save flow works end to end.
-// Replace `demoOdds` with real bookmaker prices once available.
+// Live h2h prices come from the-odds-api via /api/matchups/sync and land on
+// matchup.home_odds / matchup.away_odds. If a matchup predates a sync (or the
+// book didn't quote it), we fall back to a deterministic stub so the
+// add-leg → bet-slip → save flow still works end to end.
 function demoOdds(matchup) {
-  // deterministic-ish stub based on the event id so it's stable per matchup
   const seed = matchup.event_id.length
   const home = seed % 2 === 0 ? -140 : 120
   const away = home < 0 ? 120 : -140
   return { home, away }
 }
 
+function resolveOdds(matchup) {
+  const { home_odds, away_odds } = matchup
+  if (home_odds != null && away_odds != null) {
+    return { home: home_odds, away: away_odds, live: true }
+  }
+  return { ...demoOdds(matchup), live: false }
+}
+
 export function MatchupCard({ matchup }) {
   const slip = useBetSlip()
-  const odds = demoOdds(matchup)
+  const odds = resolveOdds(matchup)
   const label = `${matchup.away_team} @ ${matchup.home_team}`
 
   const homeLeg = {
@@ -40,6 +47,9 @@ export function MatchupCard({ matchup }) {
       </div>
       <div className="small muted" style={{ margin: '6px 0 10px' }}>
         {formatDateTime(matchup.commence_time)}
+        {odds.live
+          ? <span className="tag" style={{ marginLeft: 8 }}>live{matchup.bookmaker ? ` · ${matchup.bookmaker}` : ''}</span>
+          : <span className="small muted" style={{ marginLeft: 8 }}>demo odds</span>}
       </div>
       <div className="row wrap" style={{ gap: 8 }}>
         <AddLegButton slip={slip} leg={awayLeg} label={`+ ${matchup.away_team} ML`} odds={odds.away} />

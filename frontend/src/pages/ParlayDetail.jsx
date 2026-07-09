@@ -11,9 +11,10 @@ export function ParlayDetail() {
   const { parlayId } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
+  const [explaining, setExplaining] = useState(false)
 
   const load = useCallback(() => {
-    api.getParlay(Number(parlayId)).then(setData).catch((e) => setError(e.message))
+    return api.getParlay(Number(parlayId)).then(setData).catch((e) => setError(e.message))
   }, [parlayId])
 
   useEffect(() => { load() }, [load])
@@ -21,6 +22,19 @@ export function ParlayDetail() {
   async function settle(legId, outcome) {
     await api.settleLeg(legId, outcome)
     load()
+  }
+
+  async function generateExplanation() {
+    setExplaining(true)
+    setError(null)
+    try {
+      await api.explainParlay(Number(parlayId))
+      await load()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setExplaining(false)
+    }
   }
 
   if (error) return <div className="page"><p style={{ color: 'var(--neg)' }}>{error}</p></div>
@@ -60,6 +74,7 @@ export function ParlayDetail() {
         <p className="small muted">
           Settle each leg — parlay status derives from leg outcomes.
         </p>
+        {error && <p className="small" style={{ color: 'var(--neg)' }}>{error}</p>}
       </section>
 
       <aside className="stack">
@@ -79,11 +94,18 @@ export function ParlayDetail() {
         </div>
 
         <div className="card">
-          <h2 className="section-title">AI explanation</h2>
-          <div className="aiblock">
-            {parlay.ai_explanation
-              ? parlay.ai_explanation
-              : <span className="muted">No explanation generated yet.</span>}
+          <div className="row between">
+            <h2 className="section-title" style={{ margin: 0 }}>AI explanation</h2>
+            <button className="btn sm" disabled={explaining} onClick={generateExplanation}>
+              {explaining ? 'Generating…' : parlay.ai_explanation ? 'Regenerate' : 'Generate'}
+            </button>
+          </div>
+          <div className="aiblock" style={{ marginTop: 10 }}>
+            {explaining
+              ? <span className="muted">Analyzing edge + matchup context…</span>
+              : parlay.ai_explanation
+                ? parlay.ai_explanation
+                : <span className="muted">No explanation generated yet.</span>}
           </div>
         </div>
       </aside>

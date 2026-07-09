@@ -103,24 +103,46 @@ def get_parlay_by_parlay_id(parlay_id):
     conn.close()
     return parlay
 
-def insert_matchup(event_id, sport, league, home_team, away_team, commence_time):
-    """Inserts an upcoming match or updates it if it already exists."""
+def insert_matchup(event_id, sport, league, home_team, away_team, commence_time,
+                   home_odds=None, away_odds=None, bookmaker=None):
+    """Inserts an upcoming match or updates it if it already exists.
+
+    Odds are optional so callers without live prices (e.g. the seed script)
+    still work; when provided they're refreshed on every sync. COALESCE keeps
+    an existing price if a later sync happens to omit it.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT INTO matchups (event_id, sport, league, home_team, away_team, commence_time)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO matchups (event_id, sport, league, home_team, away_team,
+                                  commence_time, home_odds, away_odds, bookmaker)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(event_id) DO UPDATE SET
                 commence_time = excluded.commence_time,
+                home_odds = COALESCE(excluded.home_odds, matchups.home_odds),
+                away_odds = COALESCE(excluded.away_odds, matchups.away_odds),
+                bookmaker = COALESCE(excluded.bookmaker, matchups.bookmaker),
                 last_odds_update = CURRENT_TIMESTAMP
-        """, (event_id, sport, league, home_team, away_team, commence_time))
+        """, (event_id, sport, league, home_team, away_team, commence_time,
+              home_odds, away_odds, bookmaker))
         conn.commit()
         print(f"Successfully inserted/updated match: {home_team} vs {away_team}")
     except Exception as e:
         print(f"Database error inserting matchup: {e}")
     finally:
         conn.close()
+
+
+# update just the AI explanation on a parlay (leaves EV numbers untouched)
+def update_parlay_ai_explanation(parlay_id, ai_explanation):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE parlays SET ai_explanation = ? WHERE parlay_id = ?
+    """, (ai_explanation, parlay_id))
+    conn.commit()
+    conn.close()
 
 # update parlay odds
 def update_parlay_odds(parlay_id, combined_odds, implied_probability, true_probability, ev_value, ai_explanation, status):
