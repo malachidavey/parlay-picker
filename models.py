@@ -22,9 +22,25 @@ def create_tables():
         home_team TEXT NOT NULL,
         away_team TEXT NOT NULL,
         commence_time TEXT NOT NULL,
+        home_odds REAL,
+        away_odds REAL,
+        bookmaker TEXT,
         last_odds_update TEXT DEFAULT CURRENT_TIMESTAMP)
 
     """)
+
+    # Migration: add odds columns to pre-existing matchups tables that were
+    # created before live-odds support. SQLite ignores duplicate-column errors
+    # only if we guard them ourselves.
+    for column, coltype in (
+        ("home_odds", "REAL"),
+        ("away_odds", "REAL"),
+        ("bookmaker", "TEXT"),
+    ):
+        try:
+            cursor.execute(f"ALTER TABLE matchups ADD COLUMN {column} {coltype}")
+        except Exception:
+            pass  # column already exists
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS matchup_stats (

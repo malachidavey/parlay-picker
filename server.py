@@ -13,6 +13,7 @@ from database import get_connection
 from models import create_tables
 import queries as q
 import ev_calculator as ev
+import api as pipeline  # live odds sync, AI stats, scores, explanations
 
 app = FastAPI(title="Parlay Picker API")
 
@@ -101,6 +102,29 @@ def get_matchup_detail(event_id: str):
     return {"matchup": dict(m), "stats": stats_for_event(event_id)}
 
 
+# Pull live upcoming games + real odds from TheOdds API into the DB.
+@app.post("/api/matchups/sync")
+def sync_matchups(sport: str = "baseball_mlb"):
+    try:
+        count = pipeline.sync_upcoming_odds(sport)
+    except Exception as e:
+        raise HTTPException(502, f"odds sync failed: {e}")
+    return {"ok": True, "synced": count, "sport": sport}
+
+
+# Refresh live AI-driven team stats (form, H2H, injuries) for a matchup.
+@app.post("/api/matchups/{event_id}/refresh-stats")
+def refresh_matchup_stats(event_id: str):
+    m = q.get_matchup(event_id)
+    if m is None:
+        raise HTTPException(404, "matchup not found")
+    try:
+        pipeline.refresh_matchup_stats(event_id, m["home_team"], m["away_team"])
+    except Exception as e:
+        raise HTTPException(502, f"stat refresh failed: {e}")
+    return {"ok": True, "stats": stats_for_event(event_id)}
+
+
 # ---------- parlays ----------
 @app.post("/api/parlays")
 def create_parlay(body: ParlayCreate):
@@ -120,6 +144,40 @@ def get_parlay(parlay_id: int):
         raise HTTPException(404, "parlay not found")
     legs = [dict(l) for l in q.get_legs_by_parlay(parlay_id)]
     return {"parlay": dict(p), "legs": legs}
+
+
+@app.post("/api/parlays/{parlay_id}/explain")
+def explain_parlay(parlay_id: int):
+    """Generate + persist an AI explanation for a saved parlay, grounded in its
+    legs, computed EV, and the latest stored team stats."""
+    p = q.get_parlay_by_parlay_id(parlay_id)
+    if p is None:
+        raise HTTPException(404, "parlay not found")
+    legs = [dict(l) for l in q.get_legs_by_parlay(parlay_id)]
+    if not legs:
+        raise HTTPException(400, "parlay has no legs to explain")
+
+    legs_summary = ", ".join(
+        f"{l['selection']} ({l['bet_type']} {int(l['odds_at_pick']):+d})" for l in legs
+    )
+
+    # Pull whatever stats we have cached for the legs' matchups to ground the note.
+    stats_context = {}
+    for leg in legs:
+        for s in stats_for_event(leg["event_id"]):
+            if s.get("recent_form"):
+                stats_context.setdefault("form", s["recent_form"])
+            if s.get("head_to_head_summary"):
+                stats_context.setdefault("h2h", s["head_to_head_summary"])
+            if s.get("injury_notes"):
+                stats_context.setdefault("injuries", s["injury_notes"])
+
+    ev_value = round((p["ev_value"] or 0) * 100, 2)
+    explanation = pipeline.generate_parlay_explanation_with_stats(
+        legs_summary, ev_value, stats_context
+    )
+    q.update_parlay_ai_explanation(parlay_id, explanation)
+    return {"ok": True, "ai_explanation": explanation}
 
 
 @app.post("/api/parlays/{parlay_id}/legs")

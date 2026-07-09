@@ -39,7 +39,39 @@ def generate_parlay_explanation_with_stats(legs_summary, ev_value, stats_context
         print(f"GenAI Error: {e}")
         return "AI analysis temporarily processing."
 
+def extract_home_away_odds(event, preferred_bookmaker="draftkings"):
+    """Pull h2h moneyline prices for the home & away team from an odds-api event.
+
+    Uses the preferred bookmaker when present, otherwise falls back to the first
+    bookmaker that quotes h2h. Returns (home_odds, away_odds, bookmaker_key) with
+    Nones if no h2h market is available.
+    """
+    bookmakers = event.get("bookmakers", [])
+    if not bookmakers:
+        return None, None, None
+
+    chosen = next((b for b in bookmakers if b["key"] == preferred_bookmaker), None) \
+        or bookmakers[0]
+
+    for market in chosen.get("markets", []):
+        if market["key"] != "h2h":
+            continue
+        home_odds = away_odds = None
+        for outcome in market.get("outcomes", []):
+            if outcome["name"] == event["home_team"]:
+                home_odds = outcome["price"]
+            elif outcome["name"] == event["away_team"]:
+                away_odds = outcome["price"]
+        return home_odds, away_odds, chosen["key"]
+
+    return None, None, chosen["key"]
+
+
 def sync_upcoming_odds(sport_key="baseball_mlb"):
+    """Fetch live upcoming games + h2h prices and upsert them into the DB.
+
+    Returns the number of games synced so the API layer can report it.
+    """
     print(f"Fetching upcoming lines for {sport_key}...")
     url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/"
     params = {
@@ -48,20 +80,29 @@ def sync_upcoming_odds(sport_key="baseball_mlb"):
         'markets': 'h2h',
         'oddsFormat': 'american'
     }
-    
+
     response = requests.get(url, params=params)
-    if response.status_code == 200:
-        matchups_data = response.json()
-        print(f"Found {len(matchups_data)} upcoming games. Syncing to database...")
-        for event in matchups_data:
-            insert_matchup(
-                event_id=event['id'], 
-                sport=event['sport_key'], 
-                league=event['sport_title'], 
-                home_team=event['home_team'], 
-                away_team=event['away_team'], 
-                commence_time=event['commence_time']
-            )
+    if response.status_code != 200:
+        print(f"Odds API error {response.status_code}: {response.text[:200]}")
+        raise RuntimeError(f"Odds API returned {response.status_code}")
+
+    matchups_data = response.json()
+    print(f"Found {len(matchups_data)} upcoming games. Syncing to database...")
+    for event in matchups_data:
+        home_odds, away_odds, bookmaker = extract_home_away_odds(event)
+        insert_matchup(
+            event_id=event['id'],
+            sport=event['sport_key'],
+            league=event['sport_title'],
+            home_team=event['home_team'],
+            away_team=event['away_team'],
+            commence_time=event['commence_time'],
+            home_odds=home_odds,
+            away_odds=away_odds,
+            bookmaker=bookmaker,
+        )
+    return len(matchups_data)
+
 
 def fetch_and_store_matchup_context(event_id, home_team, away_team):
     print(f"Fetching structural context from TheSportsDB for: {away_team} @ {home_team}...")
@@ -171,6 +212,23 @@ def get_team_stat_overview(team_name, opponent_name):
             "h2h": "N/A",
             "injuries": "Data Unavailable"
         }
+
+def refresh_matchup_stats(event_id, home_team, away_team):
+    """Pull live AI stats for both teams and persist them to matchup_stats.
+    Returns the two stat payloads so the API layer can return them immediately."""
+    payloads = []
+    for team, opponent in ((home_team, away_team), (away_team, home_team)):
+        stats = get_team_stat_overview(team, opponent)
+        insert_matchup_stats(
+            event_id=event_id,
+            team_id=team,
+            recent_form=stats["recent_form"],
+            head_to_head_summary=stats["h2h"],
+            injury_notes=stats["injuries"],
+        )
+        payloads.append(stats)
+    return payloads
+
 
 if __name__ == "__main__":
     print("--- Running Integrated Parlay Picker Pipeline ---")
