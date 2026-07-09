@@ -128,6 +128,49 @@ def add_leg_from_api(parlay_id, event, selected_team, bet_type="h2h"):
         return
     add_leg(parlay_id, event['id'], bet_type, selected_team, picked_odds, opponent_odds)
 
+def get_team_stat_overview(team_name, opponent_name):
+    try:
+        client = genai.Client(api_key=AI_API_KEY)
+        
+        prompt = (
+            f"Perform a live web search for the active sports matchup: {team_name} vs {opponent_name}.\n"
+            f"Find the following metrics:\n"
+            f"1. The recent form (W-L streak) over the last 5 games for {team_name}.\n"
+            f"2. The recent head-to-head tracking record between {team_name} and {opponent_name}.\n"
+            f"3. Active injury reports for {team_name}.\n\n"
+            f"CRITICAL CONSTRAINT FOR INJURIES:\n"
+            f"- Identify ONLY key impact players (e.g., impact starting pitchers, daily everyday starters, or star closers).\n"
+            f"- Limit the output string to a MAXIMUM of 2 key injuries.\n"
+            f"- If there are no key impact players injured, return 'None critical reported'.\n\n"
+            f"Return a strict JSON object matching these keys exactly, without markdown formatting blocks:\n"
+            f'{{"recent_form": "5-letter string e.g. W L W W L based on their latest real-world games", '
+            f'"h2h": "recent series standing vs {opponent_name} e.g. 2-1 vs LAL or 4-2 vs TOR", '
+            f'"injuries": "string listing max 2 key impact player injuries or None critical reported"}}'
+        )
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config={"tools": [{"google_search": {}}]}
+        )
+        
+        clean_json_text = response.text.strip().replace("```json", "").replace("```", "")
+        parsed_stats = json.loads(clean_json_text)
+        
+        return {
+            "team_name": team_name,
+            "recent_form": parsed_stats.get("recent_form", "N/A"),
+            "h2h": parsed_stats.get("h2h", "N/A"),
+            "injuries": parsed_stats.get("injuries", "None reported")
+        }
+    except Exception as e:
+        print(f"Error pulling stats via AI search: {e}")
+        return {
+            "team_name": team_name,
+            "recent_form": "N/A",
+            "h2h": "N/A",
+            "injuries": "Data Unavailable"
+        }
 
 if __name__ == "__main__":
     print("--- Running Integrated Parlay Picker Pipeline ---")
@@ -164,6 +207,17 @@ if __name__ == "__main__":
         home_team="Toronto Blue Jays",
         away_team="San Francisco Giants"
     )
+
+    print("\n--- Testing Fully Dynamic Live Stat Extraction ---")
+    # Testing the Giants stats
+    giants_stats = get_team_stat_overview("San Francisco Giants", "Toronto Blue Jays")
+    print(f"\n{giants_stats['team_name']} Component Payload:")
+    print(json.dumps(giants_stats, indent=4))
+    
+    # Testing the Blue Jays stats
+    jays_stats = get_team_stat_overview("Toronto Blue Jays", "San Francisco Giants")
+    print(f"\n{jays_stats['team_name']} Component Payload:")
+    print(json.dumps(jays_stats, indent=4))
     
     print("\n--- Generating Statistical AI Analysis Summary ---")
     analysis = generate_parlay_explanation_with_stats(
